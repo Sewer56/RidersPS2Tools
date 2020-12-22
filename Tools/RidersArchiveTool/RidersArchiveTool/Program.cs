@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using CommandLine;
 using CommandLine.Text;
 
@@ -21,10 +22,26 @@ namespace RidersArchiveTool
                 with.HelpWriter = null;
             });
 
-            var parserResult = parser.ParseArguments<ExtractOptions, PackOptions>(args);
+            var parserResult = parser.ParseArguments<ExtractOptions, PackOptions, PackAllOptions>(args);
             parserResult.WithParsed<ExtractOptions>(Extract)
                         .WithParsed<PackOptions>(Pack)
+                        .WithParsed<PackAllOptions>(PackAll)
                         .WithNotParsed(errs => HandleParseError(parserResult, errs));
+        }
+
+        private static void PackAll(PackAllOptions packAllOptions)
+        {
+            var sources = File.ReadAllLines(packAllOptions.Sources);
+            var paths   = File.ReadAllLines(packAllOptions.SavePaths);
+
+            if (sources.Length != paths.Length)
+                throw new ArgumentException("Amount of source folders does not equal amount of save paths.");
+
+            for (int x = 0; x < sources.Length; x++)
+            {
+                Console.WriteLine($"Saving: {paths[x]}");
+                Pack(new PackOptions() { SavePath = paths[x], Source = sources[x] });
+            }
         }
 
         private static void Pack(PackOptions options)
