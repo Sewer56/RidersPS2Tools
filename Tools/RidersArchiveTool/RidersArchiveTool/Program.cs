@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using CommandLine;
 using CommandLine.Text;
+using RidersArchiveTool.Structs.Parser;
+using File = System.IO.File;
 
 namespace RidersArchiveTool
 {
     class Program
     {
+        private const char GroupIdSeparator = '_';
 
         static void Main(string[] args)
         {
@@ -51,10 +52,17 @@ namespace RidersArchiveTool
 
             foreach (var dir in directories)
             {
-                var id          = Convert.ToUInt16(Path.GetFileNameWithoutExtension(dir));
+                var directoryName = Path.GetFileNameWithoutExtension(dir).Split(GroupIdSeparator);
+
+                var groupNo = Convert.ToByte(directoryName[0]);
+                var id      = Convert.ToUInt16(directoryName[1]);
                 var filesInside = Directory.GetFiles(dir);
+
+                var group = new ManagedGroup() { Id = id, Files = new List<ManagedFile>(filesInside.Length) };
                 foreach (var file in filesInside)
-                    writer.AddFile(id, File.ReadAllBytes(file));
+                    group.Files.Add(new ManagedFile() { Data = File.ReadAllBytes(file) });
+
+                writer.AddGroup(groupNo, group);
             }
 
             // Write file to new location.
@@ -69,17 +77,18 @@ namespace RidersArchiveTool
 
             using var fileStream   = new FileStream(options.Source, FileMode.Open, FileAccess.Read);
             using var archiveReader = new ArchiveReader(fileStream, (int) fileStream.Length);
-            var fileIdToData = archiveReader.GetAllFiles();
+            var allGroups = archiveReader.GetAllGroups();
 
-            foreach (var data in fileIdToData)
+            for (var x = 0; x < allGroups.Length; x++)
             {
-                var folder = Path.Combine(options.SavePath, data.Key.ToString("00000"));
+                var group  = allGroups[x];
+                var folder = Path.Combine(options.SavePath, $"{x:000}{GroupIdSeparator}{group.Id:00000}");
                 Directory.CreateDirectory(folder);
 
-                for (var x = 0; x < data.Value.Length; x++)
+                for (var y = 0; y < group.Files.Count; y++)
                 {
-                    var filePath = Path.Combine(folder, x.ToString("00000"));
-                    File.WriteAllBytes(filePath, data.Value[x]);
+                    var filePath = Path.Combine(folder, y.ToString("00000"));
+                    File.WriteAllBytes(filePath, group.Files[y].Data);
                     Console.WriteLine($"Writing {filePath}");
                 }
             }

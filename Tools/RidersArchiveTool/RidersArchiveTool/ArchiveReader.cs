@@ -88,16 +88,16 @@ namespace RidersArchiveTool
         }
 
         /// <summary>
-        /// Gets all files in all groups.
+        /// Gets all files in all groups in a convenient representation.
         /// </summary>
         /// <returns>A mapping between group id to all of the group's files.</returns>
-        public Dictionary<ushort, byte[][]> GetAllFiles()
+        public ManagedGroup[] GetAllGroups()
         {
-            var dict = new Dictionary<ushort, byte[][]>();
-            foreach (var group in Groups)
-                dict[group.Id] = GetFiles(group);
+            var result = new ManagedGroup[Groups.Length];
+            for (var x = 0; x < Groups.Length; x++)
+                result[x] = new ManagedGroup(Groups[x], GetFiles(Groups[x]));
 
-            return dict;
+            return result;
         }
 
         /// <summary>
