@@ -12,8 +12,8 @@
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="HashDepot" Version="2.0.3" />
-    <PackageReference Include="Reloaded.Memory" Version="3.0.1" />
-    <PackageReference Include="Reloaded.Memory.Sigscan" Version="1.1.0" />
+    <PackageReference Include="Reloaded.Memory" Version="4.1.1" />
+    <PackageReference Include="Reloaded.Memory.Sigscan" Version="1.2.1" />
   </ItemGroup>
 
 </Project>

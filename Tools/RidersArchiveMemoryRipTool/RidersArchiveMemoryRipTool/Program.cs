@@ -140,7 +140,7 @@ namespace RidersArchiveMemoryRipTool
             searchPatternBuilder.Append(itemCountPattern);
 
             // Scan for potential matches.
-            var scanner = new Scanner(ps2Memory);
+            using var scanner = new Scanner(ps2Memory);
             var patterns = Utilities.FindAllPatterns(scanner, new CompiledScanPattern(searchPatternBuilder.ToString()));
             int archiveOffset = patterns[0].Offset;
 
