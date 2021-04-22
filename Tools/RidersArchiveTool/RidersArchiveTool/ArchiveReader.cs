@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Reloaded.Memory.Streams;
+using Reloaded.Memory.Streams.Readers;
 using RidersArchiveTool.Structs.Parser;
 
 namespace RidersArchiveTool
@@ -25,34 +26,37 @@ namespace RidersArchiveTool
         /// </summary>
         /// <param name="stream">Stream pointing to the start of the archive.</param>
         /// <param name="archiveSize">Size of the archive file.</param>
-        public ArchiveReader(Stream stream, int archiveSize)
+        /// <param name="bigEndian">True if big endian.</param>
+        public ArchiveReader(Stream stream, int archiveSize, bool bigEndian)
         {
             _stream = stream;
             _startPos = stream.Position;
 
             // Extract Data.
             using var streamReader = new BufferedStreamReader(stream, 2048);
-            streamReader.Read(out int binCount);
+            using EndianStreamReader endianStreamReader = bigEndian ? (EndianStreamReader) new BigEndianStreamReader(streamReader) : new LittleEndianStreamReader(streamReader);
+            
+            endianStreamReader.Read(out int binCount);
             Groups = new Group[binCount];
 
             // Get group item counts.
             for (int x = 0; x < Groups.Length; x++)
-                Groups[x].Files = new Structs.Parser.File[streamReader.Read<byte>()];
+                Groups[x].Files = new Structs.Parser.File[endianStreamReader.Read<byte>()];
 
             // Alignment
-            streamReader.Seek(Utilities.Utilities.RoundUp((int) streamReader.Position(), 4) - streamReader.Position(), SeekOrigin.Current);
+            endianStreamReader.Seek(Utilities.Utilities.RoundUp((int) endianStreamReader.Position(), 4) - endianStreamReader.Position(), SeekOrigin.Current);
 
             // Skip section containing first item for each group.
-            streamReader.Seek(sizeof(short) * Groups.Length, SeekOrigin.Current);
+            endianStreamReader.Seek(sizeof(short) * Groups.Length, SeekOrigin.Current);
 
             // Populate IDs
             for (int x = 0; x < Groups.Length; x++)
-                Groups[x].Id = streamReader.Read<ushort>();
+                Groups[x].Id = endianStreamReader.Read<ushort>();
 
             // Populate offsets.
             int[] offsets = new int[Groups.Select(x => x.Files.Length).Sum()];
             for (int x = 0; x < offsets.Length; x++)
-                offsets[x] = streamReader.Read<int>();
+                offsets[x] = endianStreamReader.Read<int>();
 
             int offsetIndex = 0;
             for (int x = 0; x < Groups.Length; x++)

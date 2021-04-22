@@ -26,49 +26,50 @@ namespace RidersArchiveTool
         /// <summary>
         /// Writes the contents of the archive to be generated to the stream.
         /// </summary>
-        public void Write(Stream writeStream)
+        public void Write(Stream writeStream, bool bigEndian)
         {
             using var stream = new ExtendedMemoryStream();
+            using EndianMemoryStream endianStream = bigEndian ? (EndianMemoryStream) new BigEndianMemoryStream(stream) : new LittleEndianMemoryStream(stream);
 
             // Number of items.
-            stream.Write<int>(Groups.Keys.Count);
+            endianStream.Write<int>(Groups.Keys.Count);
 
             // Number of items for each id.
             foreach (var group in Groups)
-                stream.Write<byte>((byte)group.Value.Files.Count);
+                endianStream.Write<byte>((byte)group.Value.Files.Count);
 
-            stream.AddPadding(0x00, 4);
+            endianStream.AddPadding(0x00, 4);
 
             // Write first item index for each group. 
             ushort totalItems = 0;
             foreach (var group in Groups)
             {
-                stream.Write<ushort>(totalItems);
+                endianStream.Write<ushort>(totalItems);
                 totalItems += (ushort)group.Value.Files.Count;
             }
 
             // Write ID for each group.
             foreach (var group in Groups)
-                stream.Write<ushort>(group.Value.Id);
+                endianStream.Write<ushort>(group.Value.Id);
 
             // Write offsets for each file and pad.
-            int firstWriteOffset = Utilities.Utilities.RoundUp((int)stream.Position + (sizeof(int) * totalItems), 16);
+            int firstWriteOffset = Utilities.Utilities.RoundUp((int)endianStream.Stream.Position + (sizeof(int) * totalItems), 16);
             int fileWriteOffset  = firstWriteOffset;
             foreach (var group in Groups)
             {
                 foreach (var file in group.Value.Files)
                 {
-                    stream.Write<int>(file.Data.Length <= 0 ? 0 : fileWriteOffset);
+                    endianStream.Write<int>(file.Data.Length <= 0 ? 0 : fileWriteOffset);
                     fileWriteOffset += file.Data.Length;
                 }
             }
 
             // Write files.
-            stream.Write(new byte[(int)(firstWriteOffset - stream.Position)]); // Alignment
+            endianStream.Write(new byte[(int)(firstWriteOffset - endianStream.Stream.Position)]); // Alignment
             foreach (var file in Groups.SelectMany(x => x.Value.Files))
-                stream.Write(file.Data);
+                endianStream.Write(file.Data);
 
-            writeStream.Write(stream.ToArray());
+            writeStream.Write(endianStream.ToArray());
         }
 
     }

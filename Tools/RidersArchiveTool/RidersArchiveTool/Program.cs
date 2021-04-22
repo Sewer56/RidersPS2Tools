@@ -41,7 +41,7 @@ namespace RidersArchiveTool
             for (int x = 0; x < sources.Length; x++)
             {
                 Console.WriteLine($"Saving: {paths[x]}");
-                Pack(new PackOptions() { SavePath = paths[x], Source = sources[x] });
+                Pack(new PackOptions() { SavePath = paths[x], Source = sources[x], BigEndian = packAllOptions.BigEndian });
             }
         }
 
@@ -68,7 +68,7 @@ namespace RidersArchiveTool
             // Write file to new location.
             Directory.CreateDirectory(Path.GetDirectoryName(options.SavePath));
             using var fileStream = new FileStream(options.SavePath, FileMode.Create, FileAccess.Write, FileShare.None);
-            writer.Write(fileStream);
+            writer.Write(fileStream, options.BigEndian);
         }
 
         private static void Extract(ExtractOptions options)
@@ -76,7 +76,7 @@ namespace RidersArchiveTool
             Directory.CreateDirectory(options.SavePath);
 
             using var fileStream   = new FileStream(options.Source, FileMode.Open, FileAccess.Read);
-            using var archiveReader = new ArchiveReader(fileStream, (int) fileStream.Length);
+            using var archiveReader = new ArchiveReader(fileStream, (int) fileStream.Length, options.BigEndian);
             var allGroups = archiveReader.GetAllGroups();
 
             for (var x = 0; x < allGroups.Length; x++)
