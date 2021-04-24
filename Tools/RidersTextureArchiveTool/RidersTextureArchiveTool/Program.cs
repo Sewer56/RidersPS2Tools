@@ -10,7 +10,7 @@ namespace RidersTextureArchiveTool
 {
     class Program
     {
-        private const char GroupIdSeparator = '_';
+        private const string FileOrderFileName = "order.txt";
 
         static void Main(string[] args)
         {
@@ -47,13 +47,14 @@ namespace RidersTextureArchiveTool
 
         private static void Pack(PackOptions options)
         {
-            var writer      = new ArchiveWriter();
-            var files       = Directory.GetFiles(options.Source);
+            var writer         = new ArchiveWriter();
+            string[] fileOrder = File.ReadAllLines(Path.Combine(options.Source, FileOrderFileName));
 
-            foreach (var file in files)
+            foreach (var file in fileOrder)
             {
-                var fileName = Path.GetFileName(file).UnicodeUnReplaceSlash();
-                var fileData = File.ReadAllBytes(file);
+                var filePath = Path.Combine(options.Source, file);
+                var fileName = Path.GetFileName(filePath).UnicodeUnReplaceSlash();
+                var fileData = File.ReadAllBytes(filePath);
                 writer.AddFile(fileName, fileData);
             }
 
@@ -68,14 +69,22 @@ namespace RidersTextureArchiveTool
             using var fileStream    = new FileStream(options.Source, FileMode.Open, FileAccess.Read);
             using var archiveReader = new ArchiveReader(fileStream, (int) fileStream.Length, options.BigEndian);
             Directory.CreateDirectory(options.SavePath);
+            List<string> fileNames = new List<string>();
+
 
             for (var x = 0; x < archiveReader.Files.Length; x++)
             {
                 ref var file = ref archiveReader.Files[x];
-                var filePath = Path.Combine(options.SavePath, file.Name.UnicodeReplaceSlash());
+                var replacedFileName = file.Name.UnicodeReplaceSlash();
+
+                fileNames.Add(replacedFileName);
+                var filePath = Path.Combine(options.SavePath, replacedFileName);
+
                 File.WriteAllBytes(filePath, archiveReader.GetFile(file));
                 Console.WriteLine($"Writing {filePath}");
             }
+
+            File.WriteAllLines(Path.Combine(options.SavePath, FileOrderFileName), fileNames);
         }
 
         /// <summary>
