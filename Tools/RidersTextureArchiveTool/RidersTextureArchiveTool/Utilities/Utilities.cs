@@ -42,11 +42,11 @@ namespace RidersTextureArchiveTool.Utilities
         /// <summary>
         /// Replaces slashes with Unicode Lookalikes.
         /// </summary>
-        public static string UnicodeReplaceSlash(this string text) => text.Replace('/', '∕').Replace('\\', '⧵');
+        public static string UnicodeReplaceSlash(this string text) => text.Replace('/', '∕').Replace('\\', '⧵').Replace('.', '•');
 
         /// <summary>
         /// Unreplaces slashes with Unicode Lookalikes.
         /// </summary>
-        public static string UnicodeUnReplaceSlash(this string text) => text.Replace('∕', '/').Replace('⧵', '\\');
+        public static string UnicodeUnReplaceSlash(this string text) => text.Replace('∕', '/').Replace('⧵', '\\').Replace('•', '.');
     }
 }
